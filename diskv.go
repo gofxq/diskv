@@ -599,9 +599,11 @@ func (d *Diskv) walker(c chan<- string, prefix string, cancel <-chan struct{}) f
 		key := d.InverseTransform(pathKey)
 
 		if d.FileTTLMax > 0 {
-			fileStat, _ := os.Stat(relPath)
-			if time.Now().Unix()-fileStat.ModTime().Unix() > d.FileTTLMax {
-				_ = d.Erase(key)
+			if fileStat, _ := os.Stat(path); fileStat != nil {
+				if time.Now().Unix()-fileStat.ModTime().Unix() > d.FileTTLMax {
+					_ = d.Erase(key)
+					return nil
+				}
 			}
 		}
 
