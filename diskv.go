@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 )
 
 const (
@@ -74,6 +75,7 @@ type Options struct {
 	AdvancedTransform AdvancedTransformFunction
 	InverseTransform  InverseTransformFunction
 	CacheSizeMax      uint64 // bytes
+	FileTTLMax        int64  // seconds
 	PathPerm          os.FileMode
 	FilePerm          os.FileMode
 	// If TempDir is set, it will enable filesystem atomic writes by
@@ -595,6 +597,11 @@ func (d *Diskv) walker(c chan<- string, prefix string, cancel <-chan struct{}) f
 		}
 
 		key := d.InverseTransform(pathKey)
+
+		fileStat, _ := os.Stat(relPath)
+		if d.FileTTLMax > 0 && time.Now().Unix()-fileStat.ModTime().Unix() > d.FileTTLMax {
+			_ = d.Erase(key)
+		}
 
 		if info.IsDir() || !strings.HasPrefix(key, prefix) {
 			return nil // "pass"
