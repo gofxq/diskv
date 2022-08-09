@@ -598,9 +598,11 @@ func (d *Diskv) walker(c chan<- string, prefix string, cancel <-chan struct{}) f
 
 		key := d.InverseTransform(pathKey)
 
-		fileStat, _ := os.Stat(relPath)
-		if d.FileTTLMax > 0 && time.Now().Unix()-fileStat.ModTime().Unix() > d.FileTTLMax {
-			_ = d.Erase(key)
+		if d.FileTTLMax > 0 {
+			fileStat, _ := os.Stat(relPath)
+			if time.Now().Unix()-fileStat.ModTime().Unix() > d.FileTTLMax {
+				_ = d.Erase(key)
+			}
 		}
 
 		if info.IsDir() || !strings.HasPrefix(key, prefix) {
